@@ -13,11 +13,8 @@ SCREEN_HEIGHT = int(SCREEN_WIDTH * 0.8)
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Gaysus')
 
-#framework
 clock = pygame.time.Clock()
 FPS = 60
-
-#variables
 GRAVITY = 0.65
 SCROLL_THRESH = 200
 ROWS = 16
@@ -31,16 +28,14 @@ level = 1
 start_game = False
 start_intro = False
 
-
-#player variables
+# PLAYER VAR -->
 moving_left = False
 moving_right = False
 shoot = False
 grenade = False
 grenade_thrown = False
 
-#load images
-#button images
+# STARTING BUTTONS -->
 start_img = pygame.image.load('img/start_btn.png').convert_alpha()
 exit_img = pygame.image.load('img/exit_btn.png').convert_alpha()
 restart_img = pygame.image.load('img/restart_btn.png').convert_alpha()
@@ -71,8 +66,6 @@ BG = (0, 0, 0)
 RED = (255, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
-BLACK = (0, 0, 0)
-PINK = (235, 65, 54)
 
 font = pygame.font.SysFont('Futura', 30)
 
@@ -88,7 +81,7 @@ def draw_bg():
 		screen.blit(bg_img, ((x * width) - bg_scroll * 0.8, SCREEN_HEIGHT - bg_img.get_height()))
 
 
-#function to reset level
+# RESET LVL -->
 def reset_level():
 	enemy_group.empty()
 	bullet_group.empty()
@@ -96,7 +89,7 @@ def reset_level():
 	explosion_group.empty()
 	item_box_group.empty()
 	decoration_group.empty()
-	water_group.empty()
+	fire_group.empty()
 	exit_group.empty()
 
 	data = []
@@ -106,7 +99,7 @@ def reset_level():
 	return data
 
 
-class Soldier(pygame.sprite.Sprite):
+class Player(pygame.sprite.Sprite):
 	def __init__(self, char_type, x, y, scale, speed, ammo, grenades):
 		pygame.sprite.Sprite.__init__(self)
 		self.alive = True
@@ -132,7 +125,7 @@ class Soldier(pygame.sprite.Sprite):
 		self.idling = False
 		self.idling_counter = 0
 		
-		#load all images for the players
+		#ALL ANIMATION
 		animation_types = ['Idle', 'Run', 'Jump', 'Death']
 		for animation in animation_types:
 
@@ -196,14 +189,13 @@ class Soldier(pygame.sprite.Sprite):
 				if self.vel_y < 0:
 					self.vel_y = 0
 					dy = tile[1].bottom - self.rect.top
-				#check if above the ground, i.e. falling
 				elif self.vel_y >= 0:
 					self.vel_y = 0
 					self.in_air = False
 					dy = tile[1].top - self.rect.bottom
 
 
-		if pygame.sprite.spritecollide(self, water_group, False):
+		if pygame.sprite.spritecollide(self, fire_group, False):
 			self.health = 0
 
 		level_complete = False
@@ -243,7 +235,7 @@ class Soldier(pygame.sprite.Sprite):
 	def ai(self):
 		if self.alive and player.alive:
 			if self.idling == False and random.randint(1, 200) == 1:
-				self.update_action(0)#0: idle
+				self.update_action(0)
 				self.idling = True
 				self.idling_counter = 50
 			
@@ -325,27 +317,27 @@ class World():
 					if tile >= 0 and tile <= 8:
 						self.obstacle_list.append(tile_data)
 					elif tile >= 9 and tile <= 10:
-						water = Water(img, x * TILE_SIZE, y * TILE_SIZE)
-						water_group.add(water)
+						fire = Water(img, x * TILE_SIZE, y * TILE_SIZE)
+						fire_group.add(fire)
 					elif tile >= 11 and tile <= 14:
 						decoration = Decoration(img, x * TILE_SIZE, y * TILE_SIZE)
 						decoration_group.add(decoration)
-					elif tile == 15:#create player
-						player = Soldier('player', x * TILE_SIZE, y * TILE_SIZE, 1.65, 5, 20, 5)
+					elif tile == 15:
+						player = Player('player', x * TILE_SIZE, y * TILE_SIZE, 1.65, 5, 20, 5)
 						health_bar = HealthBar(10, 10, player.health, player.health)
-					elif tile == 16:#create enemies
-						enemy = Soldier('enemy', x * TILE_SIZE, y * TILE_SIZE, 1.65, 2, 20, 0)
+					elif tile == 16:
+						enemy = Player('enemy', x * TILE_SIZE, y * TILE_SIZE, 1.65, 2, 20, 0)
 						enemy_group.add(enemy)
-					elif tile == 17:#create ammo box
+					elif tile == 17:
 						item_box = ItemBox('Ammo', x * TILE_SIZE, y * TILE_SIZE)
 						item_box_group.add(item_box)
-					elif tile == 18:#create grenade box
+					elif tile == 18:
 						item_box = ItemBox('Grenade', x * TILE_SIZE, y * TILE_SIZE)
 						item_box_group.add(item_box)
-					elif tile == 19:#create health box
+					elif tile == 19:
 						item_box = ItemBox('Health', x * TILE_SIZE, y * TILE_SIZE)
 						item_box_group.add(item_box)
-					elif tile == 20:#create exit
+					elif tile == 20:
 						exit = Exit(img, x * TILE_SIZE, y * TILE_SIZE)
 						exit_group.add(exit)
 
@@ -423,7 +415,7 @@ class HealthBar():
 	def draw(self, health):
 		self.health = health
 		ratio = self.health / self.max_health
-		pygame.draw.rect(screen, BLACK, (self.x - 2, self.y - 2, 154, 24))
+		pygame.draw.rect(screen, BG, (self.x - 2, self.y - 2, 154, 24))
 		pygame.draw.rect(screen, RED, (self.x, self.y, 150, 20))
 		pygame.draw.rect(screen, GREEN, (self.x, self.y, 150 * ratio, 20))
 
@@ -445,10 +437,10 @@ class Bullet(pygame.sprite.Sprite):
 			if tile[1].colliderect(self.rect):
 				self.kill()
 
-		#enemy damage
+		#BOT DMG
 		if pygame.sprite.spritecollide(player, bullet_group, False):
 			if player.alive:
-				player.health -= 100
+				player.health -= 25
 				self.kill()
 		for enemy in enemy_group:
 			if pygame.sprite.spritecollide(enemy, bullet_group, False):
@@ -497,9 +489,9 @@ class Grenade(pygame.sprite.Sprite):
 		self.timer -= 1
 		if self.timer <= 0:
 			self.kill()
-			explosion = Explosion(self.rect.x, self.rect.y, 0.5)
+			explosion = Explosion(self.rect.x, self.rect.y, 1.1)
 			explosion_group.add(explosion)
-			#damage
+			#DMG
 			if abs(self.rect.centerx - player.rect.centerx) < TILE_SIZE * 2 and \
 				abs(self.rect.centery - player.rect.centery) < TILE_SIZE * 2:
 				player.health -= 50
@@ -560,12 +552,11 @@ class ScreenFade():
 			pygame.draw.rect(screen, self.colour, (0, 0, SCREEN_WIDTH, 0 + self.fade_counter))
 		if self.fade_counter >= SCREEN_WIDTH:
 			fade_complete = True
-
 		return fade_complete
 
 
-intro_fade = ScreenFade(1, BLACK, 4)
-death_fade = ScreenFade(3, BLACK, 10)
+intro_fade = ScreenFade(1, BG, 4)
+death_fade = ScreenFade(3, BG, 10)
 
 start_button = button.Button(SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 - 150, start_img, 1)
 exit_button = button.Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 + 50, exit_img, 1)
@@ -577,7 +568,7 @@ grenade_group = pygame.sprite.Group()
 explosion_group = pygame.sprite.Group()
 item_box_group = pygame.sprite.Group()
 decoration_group = pygame.sprite.Group()
-water_group = pygame.sprite.Group()
+fire_group = pygame.sprite.Group()
 exit_group = pygame.sprite.Group()
 
 
@@ -631,14 +622,14 @@ while run:
 		explosion_group.update()
 		item_box_group.update()
 		decoration_group.update()
-		water_group.update()
+		fire_group.update()
 		exit_group.update()
 		bullet_group.draw(screen)
 		grenade_group.draw(screen)
 		explosion_group.draw(screen)
 		item_box_group.draw(screen)
 		decoration_group.draw(screen)
-		water_group.draw(screen)
+		fire_group.draw(screen)
 		exit_group.draw(screen)
 
 		if start_intro == True:
